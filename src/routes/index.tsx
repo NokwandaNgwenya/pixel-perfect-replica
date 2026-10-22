@@ -17,7 +17,15 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+const TOOLS = [
+  { id: "full", label: "Full brief", hint: "Everything at once" },
+  { id: "summary", label: "Meeting Summary", hint: "Overview, decisions, key points" },
+  { id: "tasks", label: "Tasks & Schedule", hint: "Action items, deadlines, daily & weekly plan" },
+  { id: "emails", label: "Follow-Up Emails", hint: "Formal, friendly & persuasive" },
+];
+
 function Index() {
+  const [mode, setMode] = useState("full");
   const [notes, setNotes] = useState("");
   const [out, setOut] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,7 +41,7 @@ function Index() {
       const res = await fetch("/api/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ notes, mode }),
         signal: ctrl.current.signal,
       });
       if (!res.ok || !res.body) throw new Error((await res.text()) || "Something went wrong.");
@@ -64,6 +72,19 @@ function Index() {
             Paste your meeting notes. Get a summary, decisions, owned action items, schedules and three ready-to-send follow-up emails.
           </p>
         </header>
+        <nav className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {TOOLS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { setMode(t.id); setOut(""); setError(""); }}
+              disabled={busy}
+              className={`rounded-lg border p-4 text-left transition ${mode === t.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-card-foreground hover:border-primary"}`}
+            >
+              <span className="block font-medium">{t.label}</span>
+              <span className={`mt-1 block text-xs ${mode === t.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{t.hint}</span>
+            </button>
+          ))}
+        </nav>
         <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
           <section className="flex flex-col gap-4">
             <textarea
@@ -78,7 +99,7 @@ function Index() {
                 disabled={busy || notes.trim().length < 20}
                 className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
               >
-                {busy ? "Working…" : "Create brief"}
+                {busy ? "Working…" : `Create ${TOOLS.find((t) => t.id === mode)?.label}`}
               </button>
               {busy && (
                 <button onClick={() => ctrl.current?.abort()} className="rounded-md border border-border px-5 py-2.5 text-sm text-foreground">

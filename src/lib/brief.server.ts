@@ -1,6 +1,15 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 
+const ROLE = `You are an AI Executive Assistant specializing in Meeting Notes Summarization, Task Planning & Scheduling, and Professional Email Generation.
+Rules: Use only information in the notes. Never invent facts. If information is missing, write "Not Specified". Prioritize tasks as High, Medium, or Low. Be concise, professional and realistic. Respond in Markdown.`;
+
+const MODES: Record<string, string> = {
+  summary: `${ROLE}\n\nProduce ONLY these sections:\n## Executive Summary\n(Brief overview, main objectives, key outcomes)\n## Decisions Made\n## Key Discussion Points`,
+  tasks: `${ROLE}\n\nProduce ONLY these sections:\n## Action Items\n(Markdown table: Task | Owner | Priority | Deadline)\n## Deadlines & Milestones\n(Markdown table: Date | Deliverable | Responsible Person)\n## Daily Schedule\n(Markdown table: Time Block | Task | Priority)\n## Weekly Schedule\n### Monday\n### Tuesday\n### Wednesday\n### Thursday\n### Friday`,
+  emails: `${ROLE}\n\nProduce ONLY these sections, each email with a Subject line and ready to send:\n## Professional Follow-Up Email (Formal)\n## Professional Follow-Up Email (Friendly)\n## Professional Follow-Up Email (Persuasive)`,
+};
+
 const SYSTEM = `You are an AI Executive Assistant specializing in Meeting Notes Summarization, Task Planning & Scheduling, and Professional Email Generation.
 
 Analyze the meeting notes and deliver, in Markdown, exactly these sections:
@@ -33,7 +42,7 @@ Rules:
 export async function handleBrief(request: Request) {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) return new Response("AI is not configured.", { status: 500 });
-  const { notes } = (await request.json()) as { notes?: string };
+  const { notes, mode } = (await request.json()) as { notes?: string; mode?: string };
   if (!notes || notes.trim().length < 20)
     return new Response("Please paste longer meeting notes.", { status: 400 });
 
@@ -44,7 +53,7 @@ export async function handleBrief(request: Request) {
   });
   const result = streamText({
     model: provider.responses("openai/gpt-6-astra"),
-    instructions: SYSTEM,
+    instructions: (mode && MODES[mode]) || SYSTEM,
     messages: [
       { role: "user", content: `Meeting notes:\n\n${notes.slice(0, 60000)}` },
     ],
