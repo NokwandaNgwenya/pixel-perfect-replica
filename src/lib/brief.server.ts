@@ -44,8 +44,8 @@ export async function handleBrief(request: Request) {
   });
   const result = streamText({
     model: provider.responses("openai/gpt-6-astra"),
+    instructions: SYSTEM,
     messages: [
-      { role: "system", content: SYSTEM },
       { role: "user", content: `Meeting notes:\n\n${notes.slice(0, 60000)}` },
     ],
     abortSignal: request.signal,
