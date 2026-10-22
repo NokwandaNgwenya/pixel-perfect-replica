@@ -31,7 +31,7 @@ Rules:
 - Keep it concise, professional, realistic, and ready to send. Each email includes a Subject line.`;
 
 export async function handleBrief(request: Request) {
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) return new Response("AI is not configured.", { status: 500 });
   const { notes } = (await request.json()) as { notes?: string };
   if (!notes || notes.trim().length < 20)
